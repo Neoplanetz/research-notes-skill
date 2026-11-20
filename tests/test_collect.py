@@ -4,6 +4,7 @@ import os
 import subprocess
 import tempfile
 import threading
+import time
 from contextlib import redirect_stdout
 import unittest
 from datetime import date
@@ -190,6 +191,76 @@ class CollectTest(unittest.TestCase):
                 os.environ.pop("GIT_CONFIG_GLOBAL", None)
             else:
                 os.environ["GIT_CONFIG_GLOBAL"] = old
+
+    def test_separator_bytes_in_message_cannot_become_options(self):
+        r = Path(self.tmp.name) / "evil"
+        r.mkdir()
+        git(r, "init", "-b", "main")
+        marker = Path(self.tmp.name) / "written-by-git"
+        fake = f"--output={marker}\x1fh\x1f2026-05-01\x1fn\x1fe\x1f\x1fs\x1fb"
+        msg = Path(self.tmp.name) / "msg.txt"
+        msg.write_bytes(f"subject\n\nbody\x1e{fake}\n".encode())
+        (r / "a.txt").write_text("1\n")
+        git(r, "add", "a.txt")
+        git(r, "commit", "-F", str(msg), when="2026-05-01")
+        c = read_commits(r, date(2026, 1, 1), date(2026, 12, 31))
+        self.assertFalse(marker.exists())
+        self.assertEqual([x["subject"] for x in c], ["subject"])
+        self.assertEqual(c[0]["ins"], 1)
+
+    def test_control_chars_in_author_keep_the_commit(self):
+        r = Path(self.tmp.name) / "ctrl"
+        r.mkdir()
+        git(r, "init", "-b", "main")
+        commit(r, "a.txt", "1\n", "odd author", "2026-05-02", name="a\x1fb", email="ab@x.org")
+        c = read_commits(r, date(2026, 1, 1), date(2026, 12, 31))
+        self.assertEqual([(x["subject"], x["author"], x["email"]) for x in c], [("odd author", "a b", "ab@x.org")])
+        self.assertEqual(list_authors(r), [("a b", "ab@x.org", 1)])
+
+    def test_cache_path_collision_gets_its_own_clone(self):
+        base = Path(self.tmp.name) / "coll"
+        for name, subj in (("s", "from s"), ("s.git", "from s.git")):
+            d = base / name
+            d.mkdir(parents=True)
+            git(d, "init", "-b", "main")
+            commit(d, "x.txt", subj, subj, "2026-06-01")
+        cache = Path(self.tmp.name) / "ccache"
+        a = resolve_repo(f"file://{base}/s", cache)
+        b = resolve_repo(f"file://{base}/s.git", cache)
+        self.assertNotEqual(a, b)
+        self.assertEqual(read_commits(b, date(2026, 1, 1), date(2026, 12, 31))[0]["subject"], "from s.git")
+        self.assertEqual(resolve_repo(f"file://{base}/s.git", cache), b)
+
+    def test_slow_credential_helper_is_cut_off(self):
+        class H(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(401)
+                self.send_header("WWW-Authenticate", 'Basic realm="x"')
+                self.end_headers()
+            def log_message(self, *a):
+                pass
+        srv = http.server.HTTPServer(("127.0.0.1", 0), H)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        helper = Path(self.tmp.name) / "slow-helper.sh"
+        helper.write_text("#!/bin/sh\nsleep 12\n")
+        helper.chmod(0o755)
+        cfg = Path(self.tmp.name) / "slowcfg"
+        cfg.write_text(f"[credential]\n\thelper = {helper}\n")
+        old_cfg, old_t = os.environ.get("GIT_CONFIG_GLOBAL"), collect.NET_TIMEOUT
+        os.environ["GIT_CONFIG_GLOBAL"] = str(cfg)
+        collect.NET_TIMEOUT = 3
+        try:
+            t0 = time.monotonic()
+            with self.assertRaises(RepoError):
+                resolve_repo(f"http://127.0.0.1:{srv.server_port}/slow.git", Path(self.tmp.name) / "scache")
+            self.assertLess(time.monotonic() - t0, 8)
+        finally:
+            srv.shutdown()
+            collect.NET_TIMEOUT = old_t
+            if old_cfg is None:
+                os.environ.pop("GIT_CONFIG_GLOBAL", None)
+            else:
+                os.environ["GIT_CONFIG_GLOBAL"] = old_cfg
 
     def test_report_dedupes_hashes(self):
         c = read_commits(self.repo, date(2026, 1, 1), date(2026, 12, 31))
