@@ -34,6 +34,10 @@ class MdliteTest(unittest.TestCase):
         self.assertEqual(meta["summary"], [f"줄 {i}" for i in range(1, 8)])
         self.assertTrue(body.lstrip().startswith("## 1. 목적"))
 
+    def test_bom_is_ignored(self):
+        meta, _ = parse_note("\ufeff" + EXAMPLE)
+        self.assertEqual(meta["prefix"], "ABC")
+
     def test_missing_key(self):
         with self.assertRaises(NoteError) as cm:
             parse_note("---\ntitle: x\n---\n")

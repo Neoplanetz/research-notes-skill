@@ -126,6 +126,8 @@ def main(argv=None):
     ap.add_argument("--prefix")
     ap.add_argument("--json", action="store_true")
     a = ap.parse_args(argv)
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(errors="replace")
     slots = build_slots(*parse_period(a.period), *load_holidays())
     left, unknown = [], []
     if a.existing:

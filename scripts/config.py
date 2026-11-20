@@ -22,7 +22,11 @@ def load_profiles() -> list[dict]:
     path = config_dir() / "profiles.json"
     if not path.exists():
         return []
-    return json.loads(path.read_text(encoding="utf-8"))
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError) as e:
+        print(f"WARN {path} 읽기 실패, 저장된 프로필 없이 진행: {e}", file=sys.stderr)
+        return []
 
 
 def remember(cfg: dict) -> None:

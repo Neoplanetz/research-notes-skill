@@ -21,6 +21,12 @@ class ConfigTest(unittest.TestCase):
             os.environ["RESEARCH_NOTES_CONFIG_DIR"] = self.old
         self.tmp.cleanup()
 
+    def test_broken_profiles_file_is_ignored(self):
+        d = config.config_dir()
+        d.mkdir(parents=True)
+        (d / "profiles.json").write_text("{broken", encoding="utf-8")
+        self.assertEqual(config.load_profiles(), [])
+
     def test_save_and_remember(self):
         self.assertEqual(config.load_profiles(), [])
         cfg = {"project": "ABC 과제 (A0000000)", "prefix": "ABC", "pi": "홍길동 책임",

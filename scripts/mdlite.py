@@ -19,7 +19,7 @@ class NoteError(Exception):
 
 
 def parse_note(text: str) -> tuple[dict, str]:
-    lines = text.splitlines()
+    lines = text.lstrip("\ufeff").splitlines()
     if not lines or lines[0].strip() != "---":
         raise NoteError("앞머리(---) 없음")
     try:

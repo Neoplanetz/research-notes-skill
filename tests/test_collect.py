@@ -1,11 +1,16 @@
+import http.server
+import io
 import os
 import subprocess
 import tempfile
+import threading
+from contextlib import redirect_stdout
 import unittest
 from datetime import date
 from pathlib import Path
 
 import _path  # noqa: F401
+import collect
 from collect import RepoError, format_report, list_authors, read_commits, resolve_repo
 
 
@@ -38,6 +43,8 @@ class CollectTest(unittest.TestCase):
         git(cls.repo, "switch", "main")
         commit(cls.repo, "d.txt", "y\n", "Main work", "2026-03-06")
         git(cls.repo, "merge", "--no-ff", "side", "-m", "Merge side", when="2026-03-07")
+        (cls.repo / "d.txt").write_text("stashed\n")
+        git(cls.repo, "stash", when="2026-03-08")
         (cls.repo / "sub").mkdir()
         cls.cache = Path(cls.tmp.name) / "cache"
 
@@ -100,6 +107,89 @@ class CollectTest(unittest.TestCase):
         self.assertGreater(before, 0)
         self.assertEqual(read_commits(clone, date(2026, 1, 1), date(2026, 12, 31)), [])
         self.assertEqual(missing(), before)
+
+    def test_stash_is_not_a_commit(self):
+        c = read_commits(self.repo, date(2026, 1, 1), date(2026, 12, 31))
+        self.assertFalse([x["subject"] for x in c if x["subject"].startswith(("WIP on", "index on"))])
+
+    def test_report_shows_author(self):
+        c = read_commits(self.repo, date(2026, 1, 1), date(2026, 12, 31))
+        self.assertIn("Side work by B  [+1/-0, 1 files, B]", format_report([("repo", c)]))
+
+    def test_error_message_has_no_python_list(self):
+        with self.assertRaises(RepoError) as cm:
+            resolve_repo("file:///nonexistent/x.git", self.cache)
+        self.assertNotIn("['", str(cm.exception))
+
+    def test_cache_path_rejects_dotdot(self):
+        with self.assertRaises(RepoError) as cm:
+            resolve_repo("https://example.invalid/a/../../escape.git", self.cache)
+        self.assertIn("잘못된 레포 주소", str(cm.exception))
+
+    def test_dash_spec_is_not_an_option(self):
+        with self.assertRaises(RepoError) as cm:
+            resolve_repo("-u@x:y", self.cache)
+        self.assertIn("잘못된 레포 주소", str(cm.exception))
+        self.assertFalse(any(p.name.startswith("-") for p in self.cache.rglob("*")))
+
+    def test_env_respects_user_ssh_settings(self):
+        old = os.environ.get("GIT_SSH")
+        os.environ["GIT_SSH"] = "/usr/bin/ssh"
+        try:
+            env = collect._git_env()
+            self.assertNotIn("GIT_SSH_COMMAND", {k: v for k, v in env.items() if k not in os.environ})
+            self.assertEqual(env["GIT_ASKPASS"], "")
+            self.assertEqual(env["GCM_INTERACTIVE"], "never")
+        finally:
+            if old is None:
+                os.environ.pop("GIT_SSH", None)
+            else:
+                os.environ["GIT_SSH"] = old
+
+    def test_auth_required_url_does_not_run_askpass(self):
+        class H(http.server.BaseHTTPRequestHandler):
+            def do_GET(self):
+                self.send_response(401)
+                self.send_header("WWW-Authenticate", 'Basic realm="x"')
+                self.end_headers()
+            def log_message(self, *a):
+                pass
+        srv = http.server.HTTPServer(("127.0.0.1", 0), H)
+        threading.Thread(target=srv.serve_forever, daemon=True).start()
+        marker = Path(self.tmp.name) / "askpass-ran"
+        script = Path(self.tmp.name) / "askpass.sh"
+        script.write_text(f"#!/bin/sh\ntouch {marker}\necho x\n")
+        script.chmod(0o755)
+        old = {k: os.environ.get(k) for k in ("SSH_ASKPASS", "GIT_ASKPASS", "SSH_ASKPASS_REQUIRE")}
+        os.environ.update(SSH_ASKPASS=str(script), SSH_ASKPASS_REQUIRE="force")
+        os.environ.pop("GIT_ASKPASS", None)
+        try:
+            with self.assertRaises(RepoError):
+                resolve_repo(f"http://127.0.0.1:{srv.server_port}/r.git", Path(self.tmp.name) / "acache")
+            self.assertFalse(marker.exists())
+        finally:
+            srv.shutdown()
+            for k, v in old.items():
+                if v is None:
+                    os.environ.pop(k, None)
+                else:
+                    os.environ[k] = v
+
+    def test_list_authors_shows_current_git_user(self):
+        cfg = Path(self.tmp.name) / "gitconfig"
+        cfg.write_text("[user]\n\tname = Me\n\temail = me@x.org\n")
+        old = os.environ.get("GIT_CONFIG_GLOBAL")
+        os.environ["GIT_CONFIG_GLOBAL"] = str(cfg)
+        try:
+            buf = io.StringIO()
+            with redirect_stdout(buf):
+                collect.main(["--list-authors", str(self.repo)])
+            self.assertIn("me@x.org", buf.getvalue())
+        finally:
+            if old is None:
+                os.environ.pop("GIT_CONFIG_GLOBAL", None)
+            else:
+                os.environ["GIT_CONFIG_GLOBAL"] = old
 
     def test_report_dedupes_hashes(self):
         c = read_commits(self.repo, date(2026, 1, 1), date(2026, 12, 31))

@@ -1,5 +1,8 @@
+import io
 import os
 import shutil
+import sys
+from contextlib import redirect_stdout
 import struct
 import tempfile
 import unittest
@@ -81,13 +84,13 @@ class RenderUnitTest(_Base):
     def test_missing_image(self):
         md = self.note(EXAMPLE.replace("images/example.jpg", "images/nope.jpg"))
         with self.assertRaises(RenderError) as cm:
-            render_note(md, self.dir / "pdf", "/bin/true")
+            render_note(md, self.dir / "pdf", sys.executable)
         self.assertIn("nope.jpg", str(cm.exception))
 
     def test_summary_error_blocks_render(self):
         md = self.note(EXAMPLE.replace("- run.sh 단일 실행 Gazebo · Nav2 · RViz 동시 구동 확인\n", "", 1))
         with self.assertRaises(RenderError):
-            render_note(md, self.dir / "pdf", "/bin/true")
+            render_note(md, self.dir / "pdf", sys.executable)
 
     def test_summary_covers_every_note_in_folder(self):
         self.note(EXAMPLE, name="a.md")
@@ -121,8 +124,40 @@ class RenderUnitTest(_Base):
         with Image.open(self.dir / "b" / m["img/p.jpg"]) as out:
             self.assertGreater(out.height, out.width)
 
+    def test_find_browser_accepts_command_name(self):
+        self.assertTrue(find_browser("python3"))
+
+    def test_style_breakout_in_title(self):
+        meta, _ = parse_note(EXAMPLE)
+        meta["title"] = "a</style><b>x"
+        self.assertEqual(render.build_html(meta, "").count("</style>"), 1)
+
+    def test_missing_note_file_is_a_fail_line(self):
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            code = render.main([str(self.dir / "nope.md"), "--check"])
+        self.assertEqual(code, 1)
+        self.assertIn("FAIL", buf.getvalue())
+
+    @unittest.skipUnless(render.HAS_PIL, "no Pillow")
+    def test_corrupt_image_is_render_error(self):
+        (self.dir / "img").mkdir()
+        (self.dir / "img" / "bad.png").write_bytes(b"not an image")
+        with self.assertRaises(RenderError):
+            render._prepare_images(self.dir, ["img/bad.png"], self.dir / "b")
+
+    def test_home_relative_image_path(self):
+        old = os.environ.get("HOME")
+        os.environ["HOME"] = str(self.dir)
+        try:
+            gray_png(self.dir / "h.png", 20, 10)
+            m = render._prepare_images(self.dir / "notes", ["~/h.png"], self.dir / "b")
+            self.assertTrue((self.dir / "b" / m["~/h.png"]).exists())
+        finally:
+            os.environ["HOME"] = old
+
     def test_find_browser_explicit_and_env(self):
-        self.assertEqual(find_browser("/bin/true"), "/bin/true")
+        self.assertEqual(find_browser(sys.executable), sys.executable)
         with self.assertRaises(RenderError):
             find_browser("/nonexistent/chrome")
 
@@ -185,7 +220,7 @@ class RenderBrowserTest(_Base):
         try:
             md = self.note(EXAMPLE.replace("images/example.jpg", "images/big.png"), with_image=False)
             (self.dir / "images").mkdir(exist_ok=True)
-            gray_png(self.dir / "images" / "big.png", 3000, 1200)
+            gray_png(self.dir / "images" / "big.png", 6000, 2400)
             r = render_note(md, self.dir / "pdf", find_browser())
             self.assertLessEqual(r["pages"], 4)
         finally:

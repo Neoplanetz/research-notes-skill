@@ -36,7 +36,10 @@ _BROWSERS = ("google-chrome", "google-chrome-stable", "chromium", "chromium-brow
              "microsoft-edge", "msedge", "chrome")
 _APP_PATHS = (
     "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "/Applications/Chromium.app/Contents/MacOS/Chromium",
     "/Applications/Microsoft Edge.app/Contents/MacOS/Microsoft Edge",
+    "~/Applications/Google Chrome.app/Contents/MacOS/Google Chrome",
+    "~/Applications/Chromium.app/Contents/MacOS/Chromium",
     r"C:\Program Files\Google\Chrome\Application\chrome.exe",
     r"C:\Program Files (x86)\Google\Chrome\Application\chrome.exe",
     r"C:\Program Files (x86)\Microsoft\Edge\Application\msedge.exe",
@@ -48,21 +51,29 @@ class RenderError(Exception):
     pass
 
 
+def _as_program(name: str) -> str | None:
+    """A path to an existing file, or a command name found on PATH."""
+    if Path(name).expanduser().is_file():
+        return str(Path(name).expanduser())
+    return shutil.which(name)
+
+
 def find_browser(explicit: str | None = None) -> str:
     if explicit:
-        if Path(explicit).is_file():
-            return explicit
+        found = _as_program(explicit)
+        if found:
+            return found
         raise RenderError(f"브라우저 없음: {explicit}")
     env = os.environ.get("RESEARCH_NOTES_BROWSER")
-    if env and Path(env).is_file():
-        return env
+    if env and _as_program(env):
+        return _as_program(env)
     for name in _BROWSERS:
         found = shutil.which(name)
         if found:
             return found
     for p in _APP_PATHS:
-        if Path(p).is_file():
-            return p
+        if Path(p).expanduser().is_file():
+            return str(Path(p).expanduser())
     raise RenderError("Chrome / Chromium / Edge 를 찾지 못함. --browser 또는 RESEARCH_NOTES_BROWSER 로 경로 지정")
 
 
@@ -83,7 +94,8 @@ def check_note(meta: dict, body: str) -> tuple[list[str], list[str]]:
 
 
 def _css_string(s: str) -> str:
-    return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ")
+    # "<" as a CSS escape so a title cannot close the <style> block
+    return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", " ").replace("<", "\\3C ")
 
 
 def _flatten(im):
@@ -103,18 +115,23 @@ def _prepare_images(md_dir: Path, srcs: list[str], build: Path) -> dict[str, str
     mapping = {}
     (build / "images").mkdir(parents=True, exist_ok=True)
     for i, src in enumerate(srcs, 1):
-        path = (md_dir / src).expanduser() if not Path(src).is_absolute() else Path(src)
+        path = Path(src).expanduser()
+        if not path.is_absolute():
+            path = md_dir / path
         if not path.is_file():
             raise RenderError(f"그림 없음: {src}")
         dest = build / "images" / f"{i:02d}_{path.name}"
         if HAS_PIL and path.suffix.lower() in (".png", ".jpg", ".jpeg"):
-            with Image.open(path) as src_im:
-                rotated = src_im.getexif().get(0x0112, 1) != 1
-                if src_im.width > IMAGE_MAX_W or rotated:
-                    dest = dest.with_suffix(".jpg")
-                    _flatten(ImageOps.exif_transpose(src_im)).save(dest, quality=85)
-                else:
-                    shutil.copy(path, dest)
+            try:
+                with Image.open(path) as src_im:
+                    rotated = src_im.getexif().get(0x0112, 1) != 1
+                    if src_im.width > IMAGE_MAX_W or rotated:
+                        dest = dest.with_suffix(".jpg")
+                        _flatten(ImageOps.exif_transpose(src_im)).save(dest, quality=85)
+                    else:
+                        shutil.copy(path, dest)
+            except (OSError, ValueError) as e:
+                raise RenderError(f"그림을 읽을 수 없음: {src} ({e})") from None
         else:
             shutil.copy(path, dest)
         mapping[src] = f"images/{dest.name}"
@@ -136,7 +153,8 @@ def build_html(meta: dict, body_html: str) -> str:
 def pdf_pages(pdf: Path) -> int:
     n = len(re.findall(rb"/Type\s*/Page(?![a-zA-Z])", Path(pdf).read_bytes()))
     if n == 0 and shutil.which("pdfinfo"):
-        out = subprocess.run(["pdfinfo", str(pdf)], capture_output=True, text=True).stdout
+        out = subprocess.run(["pdfinfo", str(pdf)], capture_output=True, text=True,
+                             encoding="utf-8", errors="replace").stdout
         m = re.search(r"^Pages:\s+(\d+)", out, re.M)
         n = int(m[1]) if m else 0
     return n
@@ -167,8 +185,8 @@ def _print_pdf(browser: str, html_path: Path, pdf: Path) -> None:
 def render_note(md: Path, pdf_dir: Path, browser: str) -> dict:
     md = Path(md)
     try:
-        meta, body = parse_note(md.read_text(encoding="utf-8"))
-    except NoteError as e:
+        meta, body = parse_note(md.read_text(encoding="utf-8-sig"))
+    except (NoteError, OSError) as e:
         raise RenderError(f"{md.name}: {e}") from None
     errors, warnings = check_note(meta, body)
     if errors:
@@ -188,7 +206,7 @@ def render_note(md: Path, pdf_dir: Path, browser: str) -> dict:
     _print_pdf(browser, html_path, pdf)
     pages = pdf_pages(pdf)
     if pages > MAX_PAGES:
-        raise RenderError(f"{md.name}: {pages}쪽 (최대 {MAX_PAGES}쪽) — 내용을 줄여 다시 렌더링")
+        raise RenderError(f"{md.name}: {pages}쪽 (최대 {MAX_PAGES}쪽), 내용을 줄여 다시 렌더링")
     if pages > PAGE_TARGET:
         warnings.append(f"{pages}쪽 (목표 1~{PAGE_TARGET}쪽)")
     return {"pdf": pdf, "pages": pages, "warnings": warnings, "meta": meta}
@@ -217,6 +235,8 @@ def main(argv=None):
     ap.add_argument("--browser")
     ap.add_argument("--check", action="store_true")
     a = ap.parse_args(argv)
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(errors="replace")
     if not a.check and not a.pdf_dir:
         ap.error("--pdf-dir 가 필요합니다 (검사만 하려면 --check)")
     browser = None
@@ -230,7 +250,7 @@ def main(argv=None):
     for md in a.notes:
         try:
             if a.check:
-                meta, body = parse_note(md.read_text(encoding="utf-8"))
+                meta, body = parse_note(md.read_text(encoding="utf-8-sig"))
                 errors, warnings = check_note(meta, body)
                 if errors:
                     raise RenderError(f"{md.name}: " + "; ".join(errors))
@@ -241,16 +261,16 @@ def main(argv=None):
                 print(f"OK   {r['pdf'].name} {r['pages']}쪽")
             for w in warnings:
                 print(f"WARN {md.name}: {w}")
-        except (RenderError, NoteError) as e:
+        except (RenderError, NoteError, OSError) as e:
             failed += 1
-            print(f"FAIL {e}")
+            print(f"FAIL {md.name}: {e}" if isinstance(e, OSError) else f"FAIL {e}")
     if a.summary:
         metas = []
         for folder in sorted({md.resolve().parent for md in a.notes}):
             for md in sorted(folder.glob("*.md")):
                 try:
-                    meta, body = parse_note(md.read_text(encoding="utf-8"))
-                except NoteError as e:
+                    meta, body = parse_note(md.read_text(encoding="utf-8-sig"))
+                except (NoteError, OSError) as e:
                     print(f"WARN summary 제외 {md.name}: {e}")
                     continue
                 if check_note(meta, body)[0]:
