@@ -60,14 +60,17 @@ mkdir -p ~/.claude/skills && ln -s ~/.agents/skills/research-notes ~/.claude/ski
 
 Codex는 명령을 샌드박스 안에서 실행합니다. 샌드박스 안에서는 PDF용 브라우저가 실행되지 않고, 작업 폴더 밖에 쓰거나 네트워크를 쓸 수 없어서 아래 단계에서 승인 창이 뜹니다.
 
-- PDF 만들기 (`render.py`): 항상
-- 입력값 저장 (`config.py save`), 커밋 모으기 (`collect.py`), 노트 파일 쓰기: 출력 폴더가 작업 폴더 밖이거나 레포가 URL일 때
+- PDF 만들기 (`render.py`), 입력값 저장 (`config.py save`): 항상
+- 커밋 모으기 (`collect.py`): 출력 폴더가 작업 폴더 밖이거나 레포가 URL일 때
+- 계획표 · 노트 파일 쓰기: 출력 폴더가 작업 폴더 밖일 때
 
-승인할 때 같은 명령을 다시 묻지 않게 고르면 다음부터는 묻지 않습니다. 쓰는 폴더를 처음부터 쓰기 허용으로 열면 승인 창이 더 줄어듭니다. 이때 폴더가 없으면 Codex의 모든 명령이 실패하므로 먼저 만듭니다:
+스크립트 승인 창에는 `python3 …/scripts/<이름>.py`로 시작하는 명령을 다시 묻지 않는 선택지가 함께 나옵니다. 이것을 고르면 그 스크립트는 다음부터 **어떤 인자로든**(파일을 쓰는 위치 포함) 묻지 않고 샌드박스 밖에서 실행됩니다. 레포 내용(커밋 메시지, README)을 믿을 수 있을 때만 고르세요.
+
+출력 폴더를 처음부터 쓰기 허용으로 열면 계획표 · 노트 쓰기 승인 창이 없어집니다. 이때 폴더가 없으면 Codex의 모든 명령이 실패하므로 먼저 만듭니다:
 
 ```bash
-mkdir -p ~/research-notes ~/.config/research-notes ~/.cache/research-notes
-codex --add-dir ~/research-notes --add-dir ~/.config/research-notes --add-dir ~/.cache/research-notes
+mkdir -p ~/research-notes
+codex --add-dir ~/research-notes
 ```
 
 ## 출력

@@ -13,7 +13,7 @@ Turns a project's commits into research notes: two per month (2nd and 4th Friday
 
 - PDFs come only from `render.py`. Never hand-write HTML or print PDFs yourself: file names, footer, page and summary checks live there.
 - Read-only. Never run tests, simulators, apps or builds, and never take new screenshots. Facts and numbers come from commits, README and docs only. Images come from files already in the repos or from the user.
-- No note is written before the user confirms `plan.md`: ask, end your turn and wait. No answer is not a confirmation.
+- No note is written before the user confirms `plan.md`: ask and wait for the answer (end your turn if you have no question tool); no answer is not a confirmation. The only exception is the non-interactive run described after Steps.
 - Every line follows `references/writing-rules.md`. Read it before writing the first note, and copy the structure of `references/example-note.md`.
 
 ## Steps
