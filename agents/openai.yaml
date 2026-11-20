@@ -1,0 +1,4 @@
+interface:
+  display_name: "연구노트"
+  short_description: "레포 커밋으로 과제 연구노트 PDF와 복사용 요약 만들기"
+  default_prompt: "$research-notes 로 이 레포 커밋으로 올해 연구노트 만들어줘"

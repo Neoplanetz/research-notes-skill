@@ -1,6 +1,6 @@
 # research-notes
 
-레포지토리 커밋으로 **과제 연구노트**를 만들어 주는 Claude Code 스킬입니다.
+레포지토리 커밋으로 **과제 연구노트**를 만들어 주는 Claude Code · Codex 스킬입니다.
 
 - 노트 작성 기간 동안 한 달에 2건(둘째 · 넷째 금요일, 공휴일이면 직전 평일)
 - 노트마다 A4 PDF 1개 (최대 4쪽, 목표 1~2쪽)
@@ -12,25 +12,40 @@
 
 ## 필요한 것
 
-- Claude Code
+- Claude Code 또는 Codex
 - Python 3.10 이상 (추가 패키지 없음. Pillow가 있으면 큰 그림을 줄여서 넣음)
 - Chrome, Chromium, Edge 중 하나, 버전 131 이상 (PDF 인쇄용. 그보다 낮으면 쪽 번호 · 꼬리말이 빠짐)
 - 한국어 글꼴 (Noto Sans CJK KR, 맑은 고딕, Apple SD Gothic Neo, 나눔고딕 중 하나)
+- (Codex) 이미 쓴 PDF 노트를 읽으려면 `pdftotext` (poppler-utils)
 - 운영체제: Linux에서 개발 · 확인. macOS · Windows는 브라우저 경로 찾기만 지원하며 확인하지 않음
 
 ## 설치
+
+Claude Code:
 
 ```bash
 git clone https://github.com/Neoplanetz/research-notes-skill.git ~/.claude/skills/research-notes
 ```
 
-Claude Code를 다시 열면 `/research-notes`로 부를 수 있습니다.
+Codex:
+
+```bash
+git clone https://github.com/Neoplanetz/research-notes-skill.git ~/.agents/skills/research-notes
+```
+
+둘 다 쓸 때는 Codex 위치에 한 번 받고 링크를 겁니다:
+
+```bash
+git clone https://github.com/Neoplanetz/research-notes-skill.git ~/.agents/skills/research-notes
+mkdir -p ~/.claude/skills && ln -s ~/.agents/skills/research-notes ~/.claude/skills/research-notes
+```
+
+설치한 뒤 Claude Code · Codex를 다시 열면 스킬이 잡힙니다.
 
 ## 사용
 
-```
-/research-notes
-```
+- Claude Code: `/research-notes`
+- Codex: `$research-notes`
 
 또는 "이 레포 커밋으로 올해 연구노트 만들어줘"처럼 요청합니다. 진행 순서:
 
@@ -40,6 +55,20 @@ Claude Code를 다시 열면 `/research-notes`로 부를 수 있습니다.
 4. **계획표 확인**: 작성일 · 제목 · 다룰 내용 · 근거 커밋을 먼저 보여 주고, 확인을 받은 뒤에 씁니다.
 5. 노트 작성 → PDF 렌더링 → 검사 (요약 7줄, 4쪽 이하, 권장 길이)
 6. 복사용 텍스트 출력
+
+### Codex에서 승인 창
+
+Codex는 명령을 샌드박스 안에서 실행합니다. 샌드박스 안에서는 PDF용 브라우저가 실행되지 않고, 작업 폴더 밖에 쓰거나 네트워크를 쓸 수 없어서 아래 단계에서 승인 창이 뜹니다.
+
+- PDF 만들기 (`render.py`): 항상
+- 입력값 저장 (`config.py save`), 커밋 모으기 (`collect.py`), 노트 파일 쓰기: 출력 폴더가 작업 폴더 밖이거나 레포가 URL일 때
+
+승인할 때 같은 명령을 다시 묻지 않게 고르면 다음부터는 묻지 않습니다. 쓰는 폴더를 처음부터 쓰기 허용으로 열면 승인 창이 더 줄어듭니다. 이때 폴더가 없으면 Codex의 모든 명령이 실패하므로 먼저 만듭니다:
+
+```bash
+mkdir -p ~/research-notes ~/.config/research-notes ~/.cache/research-notes
+codex --add-dir ~/research-notes --add-dir ~/.config/research-notes --add-dir ~/.cache/research-notes
+```
 
 ## 출력
 
@@ -66,7 +95,7 @@ Claude Code를 다시 열면 `/research-notes`로 부를 수 있습니다.
 - ...(7줄)
 ```
 
-노트 한 건만 고친 뒤 다시 만들기 (`summary.txt`는 폴더의 모든 노트로 다시 만들어지고, 제목이 바뀌면 예전 PDF는 지워짐):
+노트 한 건만 고친 뒤 다시 만들기 (`summary.txt`는 폴더의 모든 노트로 다시 만들어지고, 제목이 바뀌면 예전 PDF는 지워짐). Codex에 설치했으면 `~/.claude/skills`를 `~/.agents/skills`로 바꿉니다:
 
 ```bash
 python3 ~/.claude/skills/research-notes/scripts/render.py ~/research-notes/ABC/notes/<파일>.md \
