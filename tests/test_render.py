@@ -52,6 +52,13 @@ class _Base(unittest.TestCase):
             shutil.copy(_path.ROOT / "references" / "images" / "example.jpg", self.dir / "images" / "example.jpg")
         return p
 
+    def fake_browser(self, body: str) -> Path:
+        """A 'browser' that runs `body` and exits without writing a PDF."""
+        p = self.dir / "fake-browser.sh"
+        p.write_text(f"#!/bin/sh\n{body}\nexit 133\n", encoding="utf-8")
+        p.chmod(0o755)
+        return p
+
 
 class RenderUnitTest(_Base):
     def test_check_summary_must_be_seven(self):
@@ -160,6 +167,21 @@ class RenderUnitTest(_Base):
         self.assertEqual(find_browser(sys.executable), sys.executable)
         with self.assertRaises(RenderError):
             find_browser("/nonexistent/chrome")
+
+    @unittest.skipUnless(os.name == "posix", "shell-script fake browser")
+    def test_sandbox_browser_failure_hints(self):
+        fake = self.fake_browser("echo '...socket.cc:45] setsockopt: Operation not permitted (1)' >&2")
+        with self.assertRaises(RenderError) as cm:
+            render_note(self.note(EXAMPLE), self.dir / "pdf", str(fake))
+        self.assertIn(render.SANDBOX_HINT, str(cm.exception))
+
+    @unittest.skipUnless(os.name == "posix", "shell-script fake browser")
+    def test_other_browser_failure_has_no_hint(self):
+        fake = self.fake_browser("echo 'some other crash' >&2")
+        with self.assertRaises(RenderError) as cm:
+            render_note(self.note(EXAMPLE), self.dir / "pdf", str(fake))
+        self.assertNotIn(render.SANDBOX_HINT, str(cm.exception))
+        self.assertIn("PDF 생성 실패", str(cm.exception))
 
 
 @unittest.skipUnless(browser_available(), "no Chrome-family browser")

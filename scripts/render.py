@@ -32,6 +32,7 @@ SUMMARY_WARN = 45
 SECTIONS = ("1. 목적", "2. 수행 내용", "3. 결과", "4. 다음 계획")
 IMAGE_MAX_W = 2000
 PAGE_TARGET = 2
+SANDBOX_HINT = "샌드박스 안에서는 브라우저를 실행할 수 없음. render.py 를 샌드박스 밖에서(권한 상승) 다시 실행"
 _BROWSERS = ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser",
              "microsoft-edge", "msedge", "chrome")
 _APP_PATHS = (
@@ -179,7 +180,8 @@ def _print_pdf(browser: str, html_path: Path, pdf: Path) -> None:
         except subprocess.TimeoutExpired:
             raise RenderError(f"브라우저 시간 초과: {html_path.name}") from None
     if not pdf.exists():
-        raise RenderError(f"PDF 생성 실패 ({r.returncode}): {r.stderr.strip()[-300:]}")
+        hint = f" — {SANDBOX_HINT}" if "Operation not permitted" in r.stderr else ""
+        raise RenderError(f"PDF 생성 실패 ({r.returncode}): {r.stderr.strip()[-300:]}{hint}")
 
 
 def render_note(md: Path, pdf_dir: Path, browser: str) -> dict:
