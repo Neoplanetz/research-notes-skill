@@ -33,11 +33,17 @@ Codex:
 git clone https://github.com/Neoplanetz/research-notes-skill.git ~/.agents/skills/research-notes
 ```
 
-둘 다 쓸 때는 Codex 위치에 한 번 받고 링크를 겁니다:
+둘 다 쓸 때는 한 곳에만 받고 다른 곳에는 링크를 겁니다. 처음 받는다면:
 
 ```bash
 git clone https://github.com/Neoplanetz/research-notes-skill.git ~/.agents/skills/research-notes
 mkdir -p ~/.claude/skills && ln -s ~/.agents/skills/research-notes ~/.claude/skills/research-notes
+```
+
+Claude Code용으로 이미 받아 두었다면 Codex 쪽에 링크만 겁니다:
+
+```bash
+mkdir -p ~/.agents/skills && ln -s ~/.claude/skills/research-notes ~/.agents/skills/research-notes
 ```
 
 설치한 뒤 Claude Code · Codex를 다시 열면 스킬이 잡힙니다.
