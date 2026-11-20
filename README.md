@@ -8,6 +8,8 @@
 [![Claude Code skill](https://img.shields.io/badge/Claude%20Code-skill-d97757)](SKILL.md)
 [![Codex skill](https://img.shields.io/badge/Codex-skill-10a37f)](SKILL.md)
 
+**한국어** · [English](README.en.md)
+
 <img src="references/images/example-page-1.png" width="420" alt="연구노트 예시 1쪽">
 
 </div>
