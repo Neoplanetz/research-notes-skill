@@ -7,7 +7,7 @@ description: Use when writing 과제 연구노트 (Korean R&D project research n
 
 Turns a project's commits into research notes: two per month (2nd and 4th Friday), one A4 PDF each (max 4 pages), plus copy-paste text (실험 제목 + 7-line 실험내용요약).
 
-**Talk to the user in Korean.** `SKILL_DIR` below is the folder holding this file; run scripts as `python3 SKILL_DIR/scripts/<name>.py` with absolute paths.
+**Talk to the user in the language they write in (Korean if unclear).** Notes, `plan.md` and `summary.txt` are always in Korean. `SKILL_DIR` below is the folder holding this file; run scripts as `python3 SKILL_DIR/scripts/<name>.py` with absolute paths.
 
 ## Hard rules
 

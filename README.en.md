@@ -27,7 +27,7 @@ Korean government-funded R&D projects (과제) ask researchers to keep research 
 
 It never runs the repository's code, tests or apps. Content comes only from commits, README and docs, and images only from files already in the repositories or from you.
 
-> **Language:** the skill talks to you in Korean, and the notes, PDF template and copy-paste text are in Korean, because they follow the Korean research-note format.
+> **Language:** the skill replies in the language you write in. The notes, plan, PDF template and copy-paste text are always in Korean, because they follow the Korean research-note format.
 
 ## Install
 
