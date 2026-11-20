@@ -1,0 +1,26 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>$doc_title</title>
+<style>
+$css
+@page { @bottom-left { content: "$footer_title"; } }
+</style>
+</head>
+<body>
+
+<div class="doc-label">연 구 노 트</div>
+
+<table class="meta">
+  <tr><th>과제명</th><td>$project</td></tr>
+  <tr class="title"><th>제목</th><td>$title</td></tr>
+  <tr><th>과제 책임자</th><td>$pi</td></tr>
+  <tr><th>작성일</th><td>$date_ko</td></tr>
+  <tr><th>작성자</th><td>$author</td></tr>
+</table>
+
+$body
+
+</body>
+</html>
