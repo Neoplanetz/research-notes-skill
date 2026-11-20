@@ -1,3 +1,4 @@
+import errno
 import io
 import os
 import shutil
@@ -7,6 +8,7 @@ import struct
 import tempfile
 import unittest
 import zlib
+from unittest import mock
 from pathlib import Path
 
 import _path  # noqa: F401
@@ -57,6 +59,8 @@ class _Base(unittest.TestCase):
         p = self.dir / "fake-browser.sh"
         p.write_text(f"#!/bin/sh\n{body}\nexit 133\n", encoding="utf-8")
         p.chmod(0o755)
+        if not os.access(p, os.X_OK):
+            self.skipTest("temp folder does not allow running programs (noexec)")
         return p
 
 
@@ -145,6 +149,26 @@ class RenderUnitTest(_Base):
             code = render.main([str(self.dir / "nope.md"), "--check"])
         self.assertEqual(code, 1)
         self.assertIn("FAIL", buf.getvalue())
+        self.assertNotIn(render.SANDBOX_HINT, buf.getvalue())
+
+    def test_read_only_output_hints(self):
+        erofs = OSError(errno.EROFS, "Read-only file system", str(self.dir / ".build"))
+        buf = io.StringIO()
+        with mock.patch.object(render, "render_note", side_effect=erofs), redirect_stdout(buf):
+            code = render.main([str(self.note(EXAMPLE)), "--pdf-dir", str(self.dir / "pdf"),
+                                "--browser", sys.executable])
+        self.assertEqual(code, 1)
+        self.assertIn(render.SANDBOX_HINT, buf.getvalue())
+
+    def test_read_only_summary_is_a_fail_line(self):
+        out = self.dir / "summary.txt"
+        erofs = OSError(errno.EROFS, "Read-only file system", str(out))
+        buf = io.StringIO()
+        with mock.patch.object(render, "write_summary", side_effect=erofs), redirect_stdout(buf):
+            code = render.main([str(self.note(EXAMPLE)), "--check", "--summary", str(out)])
+        self.assertEqual(code, 1)
+        self.assertIn(f"FAIL {out}", buf.getvalue())
+        self.assertIn(render.SANDBOX_HINT, buf.getvalue())
 
     @unittest.skipUnless(render.HAS_PIL, "no Pillow")
     def test_corrupt_image_is_render_error(self):
@@ -182,6 +206,13 @@ class RenderUnitTest(_Base):
             render_note(self.note(EXAMPLE), self.dir / "pdf", str(fake))
         self.assertNotIn(render.SANDBOX_HINT, str(cm.exception))
         self.assertIn("PDF 생성 실패", str(cm.exception))
+
+    @unittest.skipUnless(os.name == "posix", "shell-script fake browser")
+    def test_unrelated_permission_error_has_no_hint(self):
+        fake = self.fake_browser("echo 'open /dev/shm/x: Operation not permitted' >&2")
+        with self.assertRaises(RenderError) as cm:
+            render_note(self.note(EXAMPLE), self.dir / "pdf", str(fake))
+        self.assertNotIn(render.SANDBOX_HINT, str(cm.exception))
 
 
 @unittest.skipUnless(browser_available(), "no Chrome-family browser")

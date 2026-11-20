@@ -5,6 +5,7 @@ usage: render.py NOTE.md... --pdf-dir DIR [--summary FILE] [--browser PATH] [--c
 Exit code 1 when any note fails (summary not 7 lines, missing image, over 4 pages, ...).
 """
 import argparse
+import errno
 import html
 import os
 import platform
@@ -32,7 +33,10 @@ SUMMARY_WARN = 45
 SECTIONS = ("1. 목적", "2. 수행 내용", "3. 결과", "4. 다음 계획")
 IMAGE_MAX_W = 2000
 PAGE_TARGET = 2
-SANDBOX_HINT = "샌드박스 안에서는 브라우저를 실행할 수 없음. render.py 를 샌드박스 밖에서(권한 상승) 다시 실행"
+SANDBOX_HINT = "샌드박스 안에서 실행했다면 샌드박스가 막은 것. render.py 를 샌드박스 밖에서 다시 실행 (sudo 아님)"
+# How a sandbox that blocks socket calls (Codex on Linux) kills Chrome, e.g.
+# "socket.cc:45] setsockopt: Operation not permitted" or "shutdown: Operation not permitted".
+_SANDBOX_STDERR = re.compile(r"(sock|shutdown)[^\n]*Operation not permitted")
 _BROWSERS = ("google-chrome", "google-chrome-stable", "chromium", "chromium-browser",
              "microsoft-edge", "msedge", "chrome")
 _APP_PATHS = (
@@ -180,8 +184,13 @@ def _print_pdf(browser: str, html_path: Path, pdf: Path) -> None:
         except subprocess.TimeoutExpired:
             raise RenderError(f"브라우저 시간 초과: {html_path.name}") from None
     if not pdf.exists():
-        hint = f" — {SANDBOX_HINT}" if "Operation not permitted" in r.stderr else ""
+        hint = f" — {SANDBOX_HINT}" if _SANDBOX_STDERR.search(r.stderr) else ""
         raise RenderError(f"PDF 생성 실패 ({r.returncode}): {r.stderr.strip()[-300:]}{hint}")
+
+
+def _os_error(e: OSError) -> str:
+    """A sandbox makes paths outside its workspace read-only."""
+    return f"{e} — {SANDBOX_HINT}" if e.errno == errno.EROFS else str(e)
 
 
 def render_note(md: Path, pdf_dir: Path, browser: str) -> dict:
@@ -265,7 +274,7 @@ def main(argv=None):
                 print(f"WARN {md.name}: {w}")
         except (RenderError, NoteError, OSError) as e:
             failed += 1
-            print(f"FAIL {md.name}: {e}" if isinstance(e, OSError) else f"FAIL {e}")
+            print(f"FAIL {md.name}: {_os_error(e)}" if isinstance(e, OSError) else f"FAIL {e}")
     if a.summary:
         metas = []
         for folder in sorted({md.resolve().parent for md in a.notes}):
@@ -279,7 +288,11 @@ def main(argv=None):
                     print(f"WARN summary 제외 {md.name}: 검사 오류")
                     continue
                 metas.append(meta)
-        write_summary(metas, a.summary)
+        try:
+            write_summary(metas, a.summary)
+        except OSError as e:
+            print(f"FAIL {a.summary}: {_os_error(e)}")
+            return 1
         print(f"{a.summary} ({len(metas)}건)")
     return 1 if failed else 0
 
