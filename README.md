@@ -11,7 +11,8 @@
 
 **한국어** · [English](README.en.md)
 
-<img src="references/images/example-page-1.png" width="420" alt="연구노트 예시 1쪽">
+<img src="references/images/example-page-1.png" width="45%" alt="연구노트 예시 1쪽">
+<img src="references/images/example-page-2.png" width="45%" alt="연구노트 예시 2쪽">
 
 </div>
 

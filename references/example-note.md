@@ -32,6 +32,8 @@ summary:
 ./run.sh     # 컨테이너 실행 → Gazebo · Nav2 · AMCL · RViz 자동 실행
 ```
 
+![창고 월드 Gazebo · RViz(Nav2) 실행 화면](images/example.jpg)
+
 ### 2.2 Clearpath 로봇 플랫폼 적용
 - clearpath_common 기반 플랫폼 연동 패키지 구성
 - A200 · A300 · DD100 · DD150 설정 · 실행 파일 추가
@@ -43,8 +45,6 @@ summary:
 - 사전 작성 점유 격자 지도 /maps 경로 배치
 - AMCL 초기 위치 설정 → 시작 직후 위치 추정 안정화
 - start_nodes.sh 대기 시간 단축 → 시뮬레이션 시작 시간 감소
-
-![창고 월드 Gazebo · RViz(Nav2) 실행 화면](images/example.jpg)
 
 ## 3. 결과
 - run.sh 단일 실행으로 Gazebo · Nav2 · AMCL · RViz 동시 구동 확인

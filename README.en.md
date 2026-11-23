@@ -11,7 +11,8 @@
 
 [한국어](README.md) · **English**
 
-<img src="references/images/example-page-1.png" width="420" alt="Page 1 of an example research note">
+<img src="references/images/example-page-1.png" width="45%" alt="Page 1 of an example research note">
+<img src="references/images/example-page-2.png" width="45%" alt="Page 2 of an example research note">
 
 </div>
 
