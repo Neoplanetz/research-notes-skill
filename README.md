@@ -136,7 +136,7 @@ python3 ~/.claude/skills/research-notes/scripts/render.py ~/research-notes/ABC/n
 ## 필요한 것
 
 - Claude Code 또는 Codex
-- Python 3.10 이상 (추가 패키지 없음. Pillow가 있으면 큰 그림을 줄여서 넣음)
+- Python 3.10 이상 (추가 패키지 없음. Pillow가 있으면 큰 그림을 줄여서 넣음). Windows에서 `python3`가 없으면 아래 명령의 `python3`를 `py -3`으로 바꿔 실행
 - Chrome, Chromium, Edge 중 하나, 버전 131 이상 (PDF 인쇄용. 그보다 낮으면 쪽 번호 · 꼬리말이 빠짐)
 - 한국어 글꼴 (Noto Sans CJK KR, 맑은 고딕, Apple SD Gothic Neo, 나눔고딕 중 하나)
 - (Codex) 이미 쓴 PDF 노트를 읽으려면 `pdftotext` (poppler-utils)

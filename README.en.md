@@ -138,7 +138,7 @@ python3 ~/.claude/skills/research-notes/scripts/render.py ~/research-notes/ABC/n
 ## Requirements
 
 - Claude Code or Codex
-- Python 3.10 or later (no extra packages; with Pillow, large images are shrunk)
+- Python 3.10 or later (no extra packages; with Pillow, large images are shrunk). On Windows without `python3`, run the commands below with `py -3` instead of `python3`
 - Chrome, Chromium or Edge, version 131 or later (prints the PDF; older versions drop page numbers and the footer)
 - A Korean font (Noto Sans CJK KR, Malgun Gothic, Apple SD Gothic Neo or NanumGothic)
 - (Codex) `pdftotext` (poppler-utils) to read notes you already have as PDF
