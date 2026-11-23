@@ -4,6 +4,7 @@
 
 **A Claude Code · Codex skill that turns repository commits into research note PDFs and copy-paste summaries for Korean government R&D projects (과제 연구노트)**
 
+[![tests](https://github.com/Neoplanetz/research-notes-skill/actions/workflows/tests.yml/badge.svg)](https://github.com/Neoplanetz/research-notes-skill/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Claude Code skill](https://img.shields.io/badge/Claude%20Code-skill-d97757)](SKILL.md)
 [![Codex skill](https://img.shields.io/badge/Codex-skill-10a37f)](SKILL.md)

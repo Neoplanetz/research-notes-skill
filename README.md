@@ -4,6 +4,7 @@
 
 **레포 커밋으로 과제 연구노트 PDF와 붙여넣을 요약을 만들어 주는 Claude Code · Codex 스킬**
 
+[![tests](https://github.com/Neoplanetz/research-notes-skill/actions/workflows/tests.yml/badge.svg)](https://github.com/Neoplanetz/research-notes-skill/actions/workflows/tests.yml)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 [![Claude Code skill](https://img.shields.io/badge/Claude%20Code-skill-d97757)](SKILL.md)
 [![Codex skill](https://img.shields.io/badge/Codex-skill-10a37f)](SKILL.md)
