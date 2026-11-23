@@ -81,8 +81,31 @@ class RenderUnitTest(_Base):
 
     def test_title_up_to_100_chars_has_no_warning(self):
         meta, body = parse_note(EXAMPLE)
-        meta["title"] = "가" * 100
+        meta["title"] = "가" * 50 + "a" * 50  # 100 chars, file name 216 bytes
         self.assertEqual(check_note(meta, body), ([], []))
+
+    def test_title_too_long_for_a_file_name_fails(self):
+        # Linux/macOS file names are at most 255 bytes; Hangul is 3 bytes in UTF-8.
+        # The longest file is .build/ABC_260213_<title>.html: 11 + 240 + 5 = 256 bytes.
+        meta, body = parse_note(EXAMPLE)
+        meta["title"] = "가" * 80
+        errors, _ = check_note(meta, body)
+        self.assertEqual(len(errors), 1)
+        self.assertIn("256바이트", errors[0])
+        self.assertIn("한글 기준 1자 이상", errors[0])
+
+    def test_longest_title_that_fits_a_file_name_passes(self):
+        meta, body = parse_note(EXAMPLE)
+        meta["title"] = "가" * 79  # 11 + 237 + 5 = 253 bytes
+        self.assertEqual(check_note(meta, body), ([], []))
+
+    def test_check_cli_fails_on_title_too_long_for_a_file_name(self):
+        md = self.note(EXAMPLE.replace("title: 표준 시뮬레이션 도커 구성 및 Clearpath J100 적용",
+                                       "title: " + "가" * 90), with_image=False)
+        buf = io.StringIO()
+        with redirect_stdout(buf):
+            self.assertEqual(render.main([str(md), "--check"]), 1)
+        self.assertIn("FAIL n.md: 파일 이름", buf.getvalue())
 
     def test_summary_format(self):
         meta, _ = parse_note(EXAMPLE)
