@@ -140,7 +140,7 @@ python3 ~/.claude/skills/research-notes/scripts/render.py ~/research-notes/ABC/n
 - Chrome, Chromium, Edge 중 하나, 버전 131 이상 (PDF 인쇄용. 그보다 낮으면 쪽 번호 · 꼬리말이 빠짐)
 - 한국어 글꼴 (Noto Sans CJK KR, 맑은 고딕, Apple SD Gothic Neo, 나눔고딕 중 하나)
 - (Codex) 이미 쓴 PDF 노트를 읽으려면 `pdftotext` (poppler-utils)
-- 운영체제: Linux에서 개발 · 확인. macOS · Windows는 브라우저 경로 찾기만 지원하며 확인하지 않음
+- 운영체제: Linux에서 개발 · 확인. macOS · Windows는 CI에서 테스트(PDF 렌더링 포함)만 통과하며, 실제 노트 작성은 확인하지 않음
 
 ## Codex에서 쓸 때
 

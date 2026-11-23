@@ -142,7 +142,7 @@ python3 ~/.claude/skills/research-notes/scripts/render.py ~/research-notes/ABC/n
 - Chrome, Chromium or Edge, version 131 or later (prints the PDF; older versions drop page numbers and the footer)
 - A Korean font (Noto Sans CJK KR, Malgun Gothic, Apple SD Gothic Neo or NanumGothic)
 - (Codex) `pdftotext` (poppler-utils) to read notes you already have as PDF
-- OS: developed and checked on Linux. On macOS and Windows only the browser lookup is supported, and nothing is checked
+- OS: developed and checked on Linux. On macOS and Windows the tests (PDF rendering included) pass in CI, but a real note-writing run is not checked
 
 ## Using it in Codex
 
