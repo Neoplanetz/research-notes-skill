@@ -40,12 +40,13 @@ jobs:
           print("Pillow:", render.HAS_PIL)
       - name: Run tests
         run: python -m unittest discover -s tests -v
-      # The example note as a PDF from each OS, to look at its Korean fonts and layout.
+      # The example note as a PDF from macOS and Windows, to look at their Korean fonts and
+      # layout (the Linux runner has no Korean font). A relative --pdf-dir on purpose.
       - name: Render the example note
-        if: ${{ !cancelled() && matrix.python == '3.x' }}
+        if: ${{ !cancelled() && matrix.python == '3.x' && runner.os != 'Linux' }}
         run: python scripts/render.py references/example-note.md --pdf-dir example-pdf
       - uses: actions/upload-artifact@v7
-        if: ${{ !cancelled() && matrix.python == '3.x' }}
+        if: ${{ !cancelled() && matrix.python == '3.x' && runner.os != 'Linux' }}
         with:
           name: example-pdf-${{ runner.os }}
           path: example-pdf/
