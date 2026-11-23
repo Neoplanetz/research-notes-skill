@@ -28,7 +28,7 @@ except ImportError:
 
 ROOT = Path(__file__).resolve().parent.parent
 MAX_PAGES = 4
-TITLE_WARN = 100
+COPY_TITLE_MAX_BYTES = 100  # the institute system's 실험 제목 field, counted in UTF-8
 # Linux and macOS file names are at most 255 bytes (UTF-8 Hangul: 3 bytes each). The longest
 # file made from a note's name is .build/<name>.html.
 NAME_MAX_BYTES = 255
@@ -95,8 +95,11 @@ def check_note(meta: dict, body: str) -> tuple[list[str], list[str]]:
         cut = -(-(name_bytes - NAME_MAX_BYTES) // 3)
         errors.append(f"파일 이름이 {name_bytes}바이트로 너무 김 (최대 {NAME_MAX_BYTES}바이트): "
                       f"제목을 한글 기준 {cut}자 이상 줄일 것")
-    if len(meta["title"]) > TITLE_WARN:
-        warnings.append(f"제목 {len(meta['title'])}자 (권장 {TITLE_WARN}자 이하)")
+    copy_bytes = len(copy_title(meta["prefix"], meta["date"], meta["title"]).encode())
+    if copy_bytes > COPY_TITLE_MAX_BYTES:
+        cut = -(-(copy_bytes - COPY_TITLE_MAX_BYTES) // 3)
+        warnings.append(f"실험 제목 {copy_bytes}바이트 (최대 {COPY_TITLE_MAX_BYTES}바이트): "
+                        f"제목을 한글 기준 {cut}자 이상 줄일 것")
     for i, line in enumerate(meta["summary"], 1):
         if len(line) > SUMMARY_WARN:
             warnings.append(f"요약 {i}번째 줄 {len(line)}자 (권장 {SUMMARY_WARN}자 안팎)")

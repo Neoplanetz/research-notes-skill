@@ -80,10 +80,20 @@ class RenderUnitTest(_Base):
         _, warnings = check_note(meta, body.replace("## 4. 다음 계획", "## 4. 기타"))
         self.assertEqual(len(warnings), 3)
 
-    def test_title_up_to_100_chars_has_no_warning(self):
+    def test_copy_title_of_100_bytes_has_no_warning(self):
+        # "[ABC] " 6 + title 82 + " ('26, 2/13)" 12 = 100 bytes in UTF-8
         meta, body = parse_note(EXAMPLE)
-        meta["title"] = "가" * 50 + "a" * 50  # 100 chars, file name 216 bytes
+        meta["title"] = "가" * 27 + "a"
         self.assertEqual(check_note(meta, body), ([], []))
+
+    def test_copy_title_over_100_bytes_warns(self):
+        meta, body = parse_note(EXAMPLE)
+        meta["title"] = "가" * 27 + "ab"  # 101 bytes
+        errors, warnings = check_note(meta, body)
+        self.assertEqual(errors, [])
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("실험 제목 101바이트", warnings[0])
+        self.assertIn("한글 기준 1자 이상", warnings[0])
 
     def test_title_too_long_for_a_file_name_fails(self):
         # Linux/macOS file names are at most 255 bytes; Hangul is 3 bytes in UTF-8.
@@ -98,7 +108,7 @@ class RenderUnitTest(_Base):
     def test_longest_title_that_fits_a_file_name_passes(self):
         meta, body = parse_note(EXAMPLE)
         meta["title"] = "가" * 79  # 11 + 237 + 5 = 253 bytes
-        self.assertEqual(check_note(meta, body), ([], []))
+        self.assertEqual(check_note(meta, body)[0], [])
 
     def test_check_cli_fails_on_title_too_long_for_a_file_name(self):
         md = self.note(EXAMPLE.replace("title: 표준 시뮬레이션 도커 구성 및 Clearpath J100 적용",
