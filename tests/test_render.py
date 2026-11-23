@@ -206,14 +206,11 @@ class RenderUnitTest(_Base):
             render._prepare_images(self.dir, ["img/bad.png"], self.dir / "b")
 
     def test_home_relative_image_path(self):
-        old = os.environ.get("HOME")
-        os.environ["HOME"] = str(self.dir)
-        try:
+        # "~" is HOME on POSIX and USERPROFILE on Windows
+        with mock.patch.dict(os.environ, {"HOME": str(self.dir), "USERPROFILE": str(self.dir)}):
             gray_png(self.dir / "h.png", 20, 10)
             m = render._prepare_images(self.dir / "notes", ["~/h.png"], self.dir / "b")
             self.assertTrue((self.dir / "b" / m["~/h.png"]).exists())
-        finally:
-            os.environ["HOME"] = old
 
     def test_find_browser_explicit_and_env(self):
         self.assertEqual(find_browser(sys.executable), sys.executable)
@@ -274,8 +271,9 @@ class RenderBrowserTest(_Base):
         filler = "\n".join(f"- 항목 {i}" for i in range(60))
         r = render_note(self.note(EXAMPLE.replace("## 3. 결과", filler + "\n\n## 3. 결과")),
                         self.dir / "pdf", find_browser())
-        self.assertEqual(r["pages"], 3)
-        self.assertTrue(any("목표 1~2쪽" in w for w in r["warnings"]))
+        # 3 pages with Linux/Windows fonts, 4 with macOS fonts
+        self.assertIn(r["pages"], (3, 4))
+        self.assertIn(f"{r['pages']}쪽 (목표 1~2쪽)", r["warnings"])
 
     def test_two_pages_no_page_warning(self):
         r = render_note(self.note(EXAMPLE), self.dir / "pdf", find_browser())

@@ -73,7 +73,8 @@ class CollectTest(unittest.TestCase):
         self.assertEqual(list_authors(self.repo)[0][:2], ("A", "a@x.org"))
 
     def test_resolve_local_subdir(self):
-        self.assertEqual(resolve_repo(str(self.repo / "sub"), self.cache), self.repo)
+        # git prints the canonical path (macOS /private/var, Windows long names), so compare files
+        self.assertTrue(resolve_repo(str(self.repo / "sub"), self.cache).samefile(self.repo))
 
     def test_resolve_url_clone_and_refetch(self):
         clone = resolve_repo(f"file://{self.repo}", self.cache)
@@ -170,6 +171,7 @@ class CollectTest(unittest.TestCase):
             self.assertFalse(marker.exists())
         finally:
             srv.shutdown()
+            srv.server_close()
             for k, v in old.items():
                 if v is None:
                     os.environ.pop(k, None)
@@ -256,6 +258,7 @@ class CollectTest(unittest.TestCase):
             self.assertLess(time.monotonic() - t0, 8)
         finally:
             srv.shutdown()
+            srv.server_close()
             collect.NET_TIMEOUT = old_t
             if old_cfg is None:
                 os.environ.pop("GIT_CONFIG_GLOBAL", None)
