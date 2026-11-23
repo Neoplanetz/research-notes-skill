@@ -120,7 +120,7 @@ In a repository folder, call `/research-notes` in Claude Code or `$research-note
 ```
 [2026.02.13(금)] ABC_260213_표준_시뮬레이션_도커_구성_및_Clearpath_J100_적용.pdf
 실험 제목
-[ABC] 260213 표준 시뮬레이션 도커 구성 및 Clearpath J100 적용
+[ABC] 표준 시뮬레이션 도커 구성 및 Clearpath J100 적용 ('26, 2/13)
 
 실험내용요약
 - 플랫폼 등록용 표준 시뮬레이션 도커 구성

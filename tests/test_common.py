@@ -21,7 +21,11 @@ class CommonTest(unittest.TestCase):
     def test_names(self):
         d = date(2026, 4, 10)
         self.assertEqual(note_basename("ABC", d, "도커 구성 및 검증"), "ABC_260410_도커_구성_및_검증")
-        self.assertEqual(copy_title("ABC", d, "도커 구성 및 검증"), "[ABC] 260410 도커 구성 및 검증")
+        self.assertEqual(copy_title("ABC", d, "도커 구성 및 검증"), "[ABC] 도커 구성 및 검증 ('26, 4/10)")
+
+    def test_copy_title_drops_leading_zeros(self):
+        self.assertEqual(copy_title("ABC", date(2026, 5, 8), "제목"), "[ABC] 제목 ('26, 5/8)")
+        self.assertEqual(copy_title("ABC", date(2027, 12, 24), "제목"), "[ABC] 제목 ('27, 12/24)")
 
 
 if __name__ == "__main__":

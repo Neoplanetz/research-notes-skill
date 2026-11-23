@@ -27,5 +27,5 @@ def note_basename(prefix: str, d: date, title: str) -> str:
 
 
 def copy_title(prefix: str, d: date, title: str) -> str:
-    """Title as entered in the institute system: [ABC] 260410 <title>"""
-    return f"[{prefix}] {fmt_yymmdd(d)} {title}"
+    """Title as entered in the institute system: [ABC] <title> ('26, 4/10)"""
+    return f"[{prefix}] {title} ('{d:%y}, {d.month}/{d.day})"

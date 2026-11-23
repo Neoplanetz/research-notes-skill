@@ -87,7 +87,7 @@ class RenderUnitTest(_Base):
         self.assertEqual(lines[:3], [
             "[2026.02.13(금)] ABC_260213_표준_시뮬레이션_도커_구성_및_Clearpath_J100_적용.pdf",
             "실험 제목",
-            "[ABC] 260213 표준 시뮬레이션 도커 구성 및 Clearpath J100 적용",
+            "[ABC] 표준 시뮬레이션 도커 구성 및 Clearpath J100 적용 ('26, 2/13)",
         ])
         self.assertEqual(lines[4], "실험내용요약")
         self.assertEqual(len([ln for ln in lines if ln.startswith("- ")]), 7)
@@ -110,8 +110,8 @@ class RenderUnitTest(_Base):
         out = self.dir / "summary.txt"
         self.assertEqual(render.main([str(self.dir / "a.md"), "--check", "--summary", str(out)]), 0)
         text = out.read_text(encoding="utf-8")
-        self.assertIn("[ABC] 260213", text)
-        self.assertIn("[ABC] 260227 두번째", text)
+        self.assertIn("[ABC] 표준 시뮬레이션 도커 구성 및 Clearpath J100 적용 ('26, 2/13)", text)
+        self.assertIn("[ABC] 두번째 시뮬레이션 도커 구성 및 Clearpath J100 적용 ('26, 2/27)", text)
 
     @unittest.skipUnless(render.HAS_PIL, "no Pillow")
     def test_shrink_keeps_transparent_background_white(self):
