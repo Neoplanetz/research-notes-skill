@@ -74,10 +74,15 @@ class RenderUnitTest(_Base):
 
     def test_check_warnings(self):
         meta, body = parse_note(EXAMPLE)
-        meta["title"] = "가" * 38
+        meta["title"] = "가" * 101
         meta["summary"][0] = "나" * 46
         _, warnings = check_note(meta, body.replace("## 4. 다음 계획", "## 4. 기타"))
         self.assertEqual(len(warnings), 3)
+
+    def test_title_up_to_100_chars_has_no_warning(self):
+        meta, body = parse_note(EXAMPLE)
+        meta["title"] = "가" * 100
+        self.assertEqual(check_note(meta, body), ([], []))
 
     def test_summary_format(self):
         meta, _ = parse_note(EXAMPLE)

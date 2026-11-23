@@ -28,7 +28,7 @@ except ImportError:
 
 ROOT = Path(__file__).resolve().parent.parent
 MAX_PAGES = 4
-TITLE_WARN = 37
+TITLE_WARN = 100
 SUMMARY_WARN = 45
 SECTIONS = ("1. 목적", "2. 수행 내용", "3. 결과", "4. 다음 계획")
 IMAGE_MAX_W = 2000
