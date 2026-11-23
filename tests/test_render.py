@@ -5,6 +5,7 @@ import shutil
 import sys
 from contextlib import redirect_stdout
 import struct
+import subprocess
 import tempfile
 import unittest
 import zlib
@@ -162,6 +163,23 @@ class RenderUnitTest(_Base):
         m = render._prepare_images(self.dir, ["img/p.jpg"], self.dir / "b")
         with Image.open(self.dir / "b" / m["img/p.jpg"]) as out:
             self.assertGreater(out.height, out.width)
+
+    def test_browser_gets_an_absolute_pdf_path(self):
+        # Chrome on Windows resolves a relative --print-to-pdf path elsewhere and fails to write it
+        md = self.note(EXAMPLE)
+        calls = []
+        def fake_run(cmd, **kw):
+            calls.append(cmd)
+            return subprocess.CompletedProcess(cmd, 1, "", "")
+        cwd = os.getcwd()
+        os.chdir(self.dir)
+        try:
+            with mock.patch.object(render.subprocess, "run", fake_run), self.assertRaises(RenderError):
+                render_note(md, Path("pdf"), sys.executable)
+        finally:
+            os.chdir(cwd)
+        arg = next(a for a in calls[0] if a.startswith("--print-to-pdf="))
+        self.assertTrue(Path(arg.split("=", 1)[1]).is_absolute(), arg)
 
     def test_find_browser_accepts_command_name(self):
         self.assertTrue(find_browser("python3"))

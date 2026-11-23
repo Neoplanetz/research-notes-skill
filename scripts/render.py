@@ -183,7 +183,7 @@ def _print_pdf(browser: str, html_path: Path, pdf: Path) -> None:
     short = "/tmp" if os.name == "posix" and os.path.isdir("/tmp") else None
     with tempfile.TemporaryDirectory(dir=short) as profile:
         cmd = [browser, "--headless=new", "--disable-gpu", "--no-first-run", "--disable-extensions",
-               "--no-pdf-header-footer", f"--user-data-dir={profile}", f"--print-to-pdf={pdf}",
+               "--no-pdf-header-footer", f"--user-data-dir={profile}", f"--print-to-pdf={pdf.absolute()}",
                html_path.resolve().as_uri()]
         if platform.system() == "Linux" and hasattr(os, "geteuid") and os.geteuid() == 0:
             cmd.insert(1, "--no-sandbox")
